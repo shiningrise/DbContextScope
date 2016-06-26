@@ -52,6 +52,38 @@ namespace Mehdime.Entity
             _dbContextFactory = dbContextFactory;
         }
 
+        public DbContext Get(Type _DbContextType)
+        {
+            if (_disposed)
+                throw new ObjectDisposedException("DbContextCollection");
+
+            var requestedType = _DbContextType;
+
+            if (!_initializedDbContexts.ContainsKey(requestedType))
+            {
+                // First time we've been asked for this particular DbContext type.
+                // Create one, cache it and start its database transaction if needed.
+                DbContext dbContext = _dbContextFactory != null
+                    ? _dbContextFactory.CreateDbContext(requestedType)
+                    : (DbContext)Activator.CreateInstance(requestedType);
+
+                _initializedDbContexts.Add(requestedType, dbContext);
+
+                if (_readOnly)
+                {
+                    dbContext.Configuration.AutoDetectChangesEnabled = false;
+                }
+
+                if (_isolationLevel.HasValue)
+                {
+                    var tran = dbContext.Database.BeginTransaction(_isolationLevel.Value);
+                    _transactions.Add(dbContext, tran);
+                }
+            }
+
+            return _initializedDbContexts[requestedType];
+        }
+
         public TDbContext Get<TDbContext>() where TDbContext : DbContext
         {
             if (_disposed)
@@ -281,5 +313,6 @@ namespace Mehdime.Entity
             TValue value;
             return dictionary.TryGetValue(key, out value) ? value : default(TValue);
         }
+
     }
 }

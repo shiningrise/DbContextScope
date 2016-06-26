@@ -5,6 +5,7 @@
  * This software may be modified and distributed under the terms
  * of the MIT license.  See the LICENSE file for details.
  */
+using System;
 using System.Data.Entity;
 
 namespace Mehdime.Entity
@@ -34,5 +35,6 @@ namespace Mehdime.Entity
     public interface IDbContextFactory
     {
 		TDbContext CreateDbContext<TDbContext>() where TDbContext : DbContext;
+        DbContext CreateDbContext(Type requestedType);
     }
 }
